@@ -1,2 +1,2 @@
-# ubuntu-installation-script
-Script to install basic packages for Ubuntu 20.04
+# linux-installation-scripts
+Scripts to install basic packages
