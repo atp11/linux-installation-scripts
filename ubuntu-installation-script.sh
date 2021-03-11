@@ -21,10 +21,8 @@ sudo apt install gnupg-agent -y
 sudo apt install software-properties-common -y
 
 # Communication
-wget https://github.com/meetfranz/franz/releases/download/v5.5.0/franz_5.5.0_amd64.deb
 wget -O discord.deb "https://discordapp.com/api/download?platform=linux&format=deb"
 wget https://packages.microsoft.com/repos/ms-teams/pool/main/t/teams/teams_1.3.00.5153_amd64.deb
-sudo dpkg -i franz*.deb
 sudo dpkg -i discord.deb
 sudo dpkg -i teams*.deb
 rm *.deb
