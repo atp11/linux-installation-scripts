@@ -1,72 +1,155 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Post-install setup for Ubuntu (22.04 / 24.04 / 26.04 LTS and derivatives).
+set -euo pipefail
 
-# Update system
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+log()  { printf '\n==> %s\n' "$*"; }
+warn() { printf 'WARN: %s\n' "$*" >&2; }
+
+if [[ "${EUID}" -eq 0 ]]; then
+  warn "No ejecutes este script como root. Usa un usuario con sudo."
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Sistema
+# ---------------------------------------------------------------------------
+log "Actualizando el sistema"
 sudo apt update
 sudo apt upgrade -y
 sudo apt autoremove -y
 sudo apt clean
 
-# Basics
-sudo apt install build-essential -y
-sudo apt install default-jre -y
-sudo apt install synaptic -y
-sudo apt install p7zip-full p7zip-rar unrar -y
-sudo apt install git -y
-sudo apt install gnome-tweak-tool -y
-sudo apt install curl -y
-sudo apt install wget -y
-sudo apt install apt-transport-https -y
-sudo apt install ca-certificates -y
-sudo apt install gnupg-agent -y
-sudo apt install software-properties-common -y
+# ---------------------------------------------------------------------------
+# Básicos
+# ---------------------------------------------------------------------------
+log "Instalando paquetes básicos"
+sudo apt install -y \
+  build-essential \
+  default-jre \
+  synaptic \
+  p7zip-full p7zip-rar unrar \
+  git \
+  gnome-tweaks \
+  curl wget \
+  ca-certificates \
+  gnupg \
+  apt-transport-https \
+  software-properties-common \
+  vim \
+  gparted \
+  wireshark \
+  nmap \
+  calibre \
+  zsh \
+  python3-pip \
+  python3-venv \
+  python3-gpg \
+  libappindicator3-1 \
+  flatpak
 
-# Communication
-wget -O discord.deb "https://discordapp.com/api/download?platform=linux&format=deb"
-wget https://packages.microsoft.com/repos/ms-teams/pool/main/t/teams/teams_1.3.00.5153_amd64.deb
-sudo dpkg -i discord.deb
-sudo dpkg -i teams*.deb
-rm *.deb
+# ---------------------------------------------------------------------------
+# Comunicación
+# ---------------------------------------------------------------------------
+log "Instalando Discord"
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "${TMP_DIR}"' EXIT
+wget -q -O "${TMP_DIR}/discord.deb" \
+  "https://discord.com/api/download?platform=linux&format=deb"
+sudo apt install -y "${TMP_DIR}/discord.deb"
 
-# Tools
-sudo apt install vim -y
-sudo apt install gparted -y
-sudo apt install wireshark -y
-sudo apt install nmap -y
+# Teams clásico fue discontinuado; wrapper no oficial alrededor de Teams Web.
+log "Instalando Teams for Linux (wrapper no oficial; alternativa: PWA en Chrome)"
+sudo snap install teams-for-linux
 
-# Docker
-sudo apt-get remove docker docker-engine docker.io containerd runc
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo apt-key fingerprint 0EBFCD88
-sudo add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable"
+# ---------------------------------------------------------------------------
+# Docker (repositorio oficial)
+# ---------------------------------------------------------------------------
+log "Instalando Docker Engine"
+for pkg in docker.io docker-compose docker-compose-v2 docker-doc docker-buildx \
+           podman-docker containerd runc; do
+  sudo apt remove -y "${pkg}" 2>/dev/null || true
+done
+
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+sudo tee /etc/apt/sources.list.d/docker.sources >/dev/null <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
 sudo apt update
-sudo apt install docker-ce docker-ce-cli containerd.io -y
+sudo apt install -y \
+  docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin
 
+sudo systemctl enable --now docker
+sudo usermod -aG docker "${USER}"
+
+# ---------------------------------------------------------------------------
 # Dropbox
-sudo echo "deb [arch=i386,amd64] http://linux.dropbox.com/ubuntu bionic main" > /etc/apt/sources.list.d/dropbox.list
-sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 1C61A2656FB57B7E4DE0F4C1FC918B335044912E
-sudo apt update
-sudo apt install python3-gpg dropbox -y
+# ---------------------------------------------------------------------------
+log "Instalando Dropbox"
+DROPBOX_DEB="$(
+  curl -fsSL https://linux.dropbox.com/packages/ubuntu/ \
+    | grep -oE 'dropbox_[0-9]{4}\.[0-9]{2}\.[0-9]{2}_amd64\.deb' \
+    | sort -V | tail -1
+)"
+if [[ -n "${DROPBOX_DEB}" ]]; then
+  wget -q -O "${TMP_DIR}/dropbox.deb" \
+    "https://linux.dropbox.com/packages/ubuntu/${DROPBOX_DEB}"
+  sudo apt install -y "${TMP_DIR}/dropbox.deb"
+else
+  warn "No se pudo resolver el paquete Dropbox; instálalo manualmente desde dropbox.com"
+fi
 
-# Battery (only laptop)
-sudo apt install tlp tlp-rdw -y
-sudo tlp start
+# ---------------------------------------------------------------------------
+# Batería (portátiles)
+# ---------------------------------------------------------------------------
+CHASSIS="$(cat /sys/class/dmi/id/chassis_type 2>/dev/null || echo 0)"
+if [[ "${CHASSIS}" =~ ^(8|9|10|11|14)$ ]]; then
+  log "Portátil detectado: instalando TLP"
+  sudo apt install -y tlp tlp-rdw
+  sudo systemctl enable --now tlp
+else
+  log "No parece un portátil; se omite TLP"
+fi
 
+# ---------------------------------------------------------------------------
 # Google Chrome
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo dpkg -i google-chrome-stable_current_amd64.deb
-rm google-chrome-stable_current_amd64.deb
+# ---------------------------------------------------------------------------
+log "Instalando Google Chrome"
+wget -q -O "${TMP_DIR}/chrome.deb" \
+  https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo apt install -y "${TMP_DIR}/chrome.deb"
 
-# Python 3 (pip and packages)
-sudo apt install python3-pip -y
-python3 -m pip install -r requirements.txt
+# ---------------------------------------------------------------------------
+# Python (venv de usuario; evita conflictos con PEP 668)
+# ---------------------------------------------------------------------------
+log "Creando venv e instalando requirements.txt"
+VENV_DIR="${HOME}/.venvs/default"
+python3 -m venv "${VENV_DIR}"
+# shellcheck disable=SC1091
+source "${VENV_DIR}/bin/activate"
+pip install --upgrade pip
+if [[ -f "${SCRIPT_DIR}/requirements.txt" ]]; then
+  pip install -r "${SCRIPT_DIR}/requirements.txt"
+fi
+deactivate
+printf '\nAñade al PATH si quieres: source %s/bin/activate\n' "${VENV_DIR}"
 
-# Calibre
-sudo apt install calibre -y
-
-# Snapshots (snapcraft.io)
+# ---------------------------------------------------------------------------
+# Snaps / apps de escritorio
+# ---------------------------------------------------------------------------
+log "Instalando aplicaciones (snap)"
 sudo snap install vlc
 sudo snap install audacity
 sudo snap install kdenlive
@@ -76,6 +159,17 @@ sudo snap install spotify
 sudo snap install sublime-text
 sudo snap install telegram-desktop
 
+# ---------------------------------------------------------------------------
 # Oh My Zsh
-sudo apt install zsh -y
-sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+# ---------------------------------------------------------------------------
+log "Instalando Oh My Zsh"
+if [[ ! -d "${HOME}/.oh-my-zsh" ]]; then
+  RUNZSH=no CHSH=no \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
+    "" --unattended
+  chsh -s "$(command -v zsh)" || warn "No se pudo cambiar el shell; ejecuta: chsh -s \$(which zsh)"
+else
+  log "Oh My Zsh ya está instalado"
+fi
+
+log "Listo. Cierra sesión (o reinicia) para que el grupo docker tenga efecto."

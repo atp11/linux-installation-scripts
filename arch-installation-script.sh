@@ -1,81 +1,124 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Post-install setup for Arch Linux (y derivados basados en pacman).
+set -euo pipefail
 
-# Update system
-sudo apt update
-sudo apt upgrade -y
-sudo apt autoremove -y
-sudo apt clean
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Basics
-sudo apt install build-essential -y
-sudo apt install default-jre -y
-sudo apt install synaptic -y
-sudo apt install p7zip-full p7zip-rar unrar -y
-sudo apt install git -y
-sudo apt install gnome-tweak-tool -y
-sudo apt install curl -y
-sudo apt install wget -y
-sudo apt install apt-transport-https -y
-sudo apt install ca-certificates -y
-sudo apt install gnupg-agent -y
-sudo apt install software-properties-common -y
+log()  { printf '\n==> %s\n' "$*"; }
+warn() { printf 'WARN: %s\n' "$*" >&2; }
 
-# Communication
-wget -O discord.deb "https://discordapp.com/api/download?platform=linux&format=deb"
-wget https://packages.microsoft.com/repos/ms-teams/pool/main/t/teams/teams_1.3.00.5153_amd64.deb
-sudo dpkg -i discord.deb
-sudo dpkg -i teams*.deb
-rm *.deb
+if [[ "${EUID}" -eq 0 ]]; then
+  warn "No ejecutes este script como root. Usa un usuario con sudo."
+  exit 1
+fi
 
-# Tools
-sudo apt install vim -y
-sudo apt install gparted -y
-sudo apt install wireshark -y
-sudo apt install nmap -y
+# ---------------------------------------------------------------------------
+# Sistema
+# ---------------------------------------------------------------------------
+log "Actualizando el sistema"
+sudo pacman -Syu --noconfirm
 
+# ---------------------------------------------------------------------------
+# Básicos (+ base-devel para AUR)
+# ---------------------------------------------------------------------------
+log "Instalando paquetes oficiales"
+sudo pacman -S --needed --noconfirm \
+  base-devel \
+  git curl wget \
+  vim \
+  jre-openjdk \
+  p7zip unrar \
+  gnome-tweaks \
+  gparted \
+  wireshark-qt nmap \
+  calibre \
+  zsh \
+  python python-pip python-virtualenv \
+  docker docker-compose \
+  discord \
+  telegram-desktop \
+  vlc \
+  audacity \
+  kdenlive \
+  flatpak
+
+# ---------------------------------------------------------------------------
+# yay (AUR helper)
+# ---------------------------------------------------------------------------
+if ! command -v yay >/dev/null 2>&1; then
+  log "Instalando yay"
+  TMP_DIR="$(mktemp -d)"
+  git clone https://aur.archlinux.org/yay.git "${TMP_DIR}/yay"
+  (cd "${TMP_DIR}/yay" && makepkg -si --noconfirm)
+  rm -rf "${TMP_DIR}"
+else
+  log "yay ya está instalado"
+fi
+
+# ---------------------------------------------------------------------------
+# AUR
+# ---------------------------------------------------------------------------
+log "Instalando paquetes AUR"
+yay -S --needed --noconfirm \
+  google-chrome \
+  dropbox \
+  postman-bin \
+  spotify \
+  sublime-text-4 \
+  opera \
+  teams-for-linux
+
+# ---------------------------------------------------------------------------
 # Docker
-sudo apt-get remove docker docker-engine docker.io containerd runc
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo apt-key fingerprint 0EBFCD88
-sudo add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable"
-sudo apt update
-sudo apt install docker-ce docker-ce-cli containerd.io -y
+# ---------------------------------------------------------------------------
+log "Habilitando Docker"
+sudo systemctl enable --now docker
+sudo usermod -aG docker "${USER}"
 
-# Dropbox
-sudo echo "deb [arch=i386,amd64] http://linux.dropbox.com/ubuntu bionic main" > /etc/apt/sources.list.d/dropbox.list
-sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 1C61A2656FB57B7E4DE0F4C1FC918B335044912E
-sudo apt update
-sudo apt install python3-gpg dropbox -y
+# ---------------------------------------------------------------------------
+# Batería (portátiles)
+# ---------------------------------------------------------------------------
+CHASSIS="$(cat /sys/class/dmi/id/chassis_type 2>/dev/null || echo 0)"
+if [[ "${CHASSIS}" =~ ^(8|9|10|11|14)$ ]]; then
+  log "Portátil detectado: instalando TLP"
+  sudo pacman -S --needed --noconfirm tlp tlp-rdw
+  sudo systemctl enable --now tlp
+else
+  log "No parece un portátil; se omite TLP"
+fi
 
-# Battery (only laptop)
-sudo apt install tlp tlp-rdw -y
-sudo tlp start
+# ---------------------------------------------------------------------------
+# Python (venv de usuario)
+# ---------------------------------------------------------------------------
+log "Creando venv e instalando requirements.txt"
+VENV_DIR="${HOME}/.venvs/default"
+python -m venv "${VENV_DIR}"
+# shellcheck disable=SC1091
+source "${VENV_DIR}/bin/activate"
+pip install --upgrade pip
+if [[ -f "${SCRIPT_DIR}/requirements.txt" ]]; then
+  pip install -r "${SCRIPT_DIR}/requirements.txt"
+fi
+deactivate
+printf '\nAñade al PATH si quieres: source %s/bin/activate\n' "${VENV_DIR}"
 
-# Google Chrome
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo dpkg -i google-chrome-stable_current_amd64.deb
-rm google-chrome-stable_current_amd64.deb
+# ---------------------------------------------------------------------------
+# Flatpak (Flathub)
+# ---------------------------------------------------------------------------
+log "Configurando Flathub"
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
-# Python 3 (pip and packages)
-sudo apt install python3-pip -y
-python3 -m pip install -r requirements.txt
-
-# Calibre
-sudo apt install calibre -y
-
-# Snapshots (snapcraft.io)
-sudo snap install vlc
-sudo snap install audacity
-sudo snap install kdenlive
-sudo snap install opera
-sudo snap install postman
-sudo snap install spotify
-sudo snap install sublime-text
-sudo snap install telegram-desktop
-
+# ---------------------------------------------------------------------------
 # Oh My Zsh
-sudo apt install zsh -y
-sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+# ---------------------------------------------------------------------------
+log "Instalando Oh My Zsh"
+if [[ ! -d "${HOME}/.oh-my-zsh" ]]; then
+  RUNZSH=no CHSH=no \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
+    "" --unattended
+  chsh -s "$(command -v zsh)" || warn "No se pudo cambiar el shell; ejecuta: chsh -s \$(which zsh)"
+else
+  log "Oh My Zsh ya está instalado"
+fi
+
+log "Listo. Cierra sesión (o reinicia) para que el grupo docker tenga efecto."

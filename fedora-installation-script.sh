@@ -1,77 +1,165 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Post-install setup for Fedora Workstation.
+set -euo pipefail
 
-# Update system
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+log()  { printf '\n==> %s\n' "$*"; }
+warn() { printf 'WARN: %s\n' "$*" >&2; }
+
+if [[ "${EUID}" -eq 0 ]]; then
+  warn "No ejecutes este script como root. Usa un usuario con sudo."
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Sistema
+# ---------------------------------------------------------------------------
+log "Actualizando el sistema"
 sudo dnf -y upgrade
 sudo dnf -y autoremove
 sudo dnf -y clean all
 
-# Basics
-sudo dnf -y install curl
-sudo dnf -y install wget
-sudo dnf install git-all
-sudo dnf -y install unrar p7zip p7zip-plugins
-sudo dnf -y install java
+# ---------------------------------------------------------------------------
+# RPM Fusion (codecs / extras)
+# ---------------------------------------------------------------------------
+log "Habilitando RPM Fusion"
+FEDORA_VERSION="$(rpm -E %fedora)"
+sudo dnf -y install \
+  "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm" \
+  "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm"
 
-# Communication
-wget https://packages.microsoft.com/yumrepos/ms-teams/teams-1.2.00.32451-1.x86_64.rpm
-sudo dnf localinstall teams-1.2.00.32451-1.x86_64.rpm
-rm *.rpm
+# ---------------------------------------------------------------------------
+# Básicos
+# ---------------------------------------------------------------------------
+log "Instalando paquetes básicos"
+sudo dnf -y install \
+  curl wget \
+  git \
+  java-latest-openjdk \
+  unrar p7zip p7zip-plugins \
+  vim \
+  gparted \
+  wireshark \
+  nmap \
+  calibre \
+  zsh \
+  python3-pip \
+  python3-virtualenv \
+  gnome-tweaks \
+  flatpak \
+  libappindicator-gtk3
 
-# Tools
-sudo dnf -y install vim
-su -c "yum install gparted"
-sudo dnf -y install wireshark-qt
-sudo yum install nmap
+# ---------------------------------------------------------------------------
+# Flatpak / Flathub (preferido en Fedora frente a snap)
+# ---------------------------------------------------------------------------
+log "Configurando Flathub"
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
-#TODO AQUI
+log "Instalando aplicaciones (Flatpak)"
+flatpak install -y flathub \
+  com.discordapp.Discord \
+  com.spotify.Client \
+  org.telegram.desktop \
+  org.videolan.VLC \
+  org.audacityteam.Audacity \
+  org.kde.kdenlive \
+  com.opera.Opera \
+  com.getpostman.Postman \
+  com.sublimehq.SublimeText \
+  com.github.IsmaelMartinez.Teams_for_Linux
 
-# Docker
-sudo apt-get remove docker docker-engine docker.io containerd runc
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo apt-key fingerprint 0EBFCD88
-sudo add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable"
-sudo apt update
-sudo apt install docker-ce docker-ce-cli containerd.io -y
+# ---------------------------------------------------------------------------
+# Docker (repositorio oficial)
+# ---------------------------------------------------------------------------
+log "Instalando Docker Engine"
+sudo dnf -y remove docker docker-client docker-client-latest docker-common \
+  docker-latest docker-latest-logrotate docker-logrotate docker-selinux \
+  docker-engine-selinux docker-engine 2>/dev/null || true
 
+sudo dnf -y install dnf-plugins-core
+DOCKER_REPO_URL="https://download.docker.com/linux/fedora/docker-ce.repo"
+# dnf5 addrepo falla con líneas vacías en el .repo; se compactan antes de añadirlo.
+TMP_REPO="$(mktemp)"
+curl -fsSL "${DOCKER_REPO_URL}" | tr -s '\n' > "${TMP_REPO}"
+if ! sudo dnf config-manager addrepo --overwrite --save-filename=docker-ce.repo \
+      --from-repofile="${TMP_REPO}" 2>/dev/null; then
+  sudo dnf config-manager --add-repo "${DOCKER_REPO_URL}"
+fi
+rm -f "${TMP_REPO}"
+
+sudo dnf -y install \
+  docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin
+
+sudo systemctl enable --now docker
+sudo usermod -aG docker "${USER}"
+
+# ---------------------------------------------------------------------------
 # Dropbox
-sudo echo "deb [arch=i386,amd64] http://linux.dropbox.com/ubuntu bionic main" > /etc/apt/sources.list.d/dropbox.list
-sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 1C61A2656FB57B7E4DE0F4C1FC918B335044912E
-sudo apt update
-sudo apt install python3-gpg dropbox -y
+# ---------------------------------------------------------------------------
+log "Instalando Dropbox (nautilus-dropbox)"
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "${TMP_DIR}"' EXIT
+DROPBOX_RPM="$(
+  curl -fsSL https://linux.dropbox.com/packages/fedora/ \
+    | grep -oE "nautilus-dropbox-[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[0-9]+\.fc[0-9]+\.x86_64\.rpm" \
+    | sort -V | tail -1
+)"
+if [[ -n "${DROPBOX_RPM}" ]]; then
+  wget -q -O "${TMP_DIR}/dropbox.rpm" \
+    "https://linux.dropbox.com/packages/fedora/${DROPBOX_RPM}"
+  sudo dnf -y install "${TMP_DIR}/dropbox.rpm"
+else
+  warn "No se pudo resolver el RPM de Dropbox; instálalo manualmente desde dropbox.com"
+fi
 
-# Battery (only laptop)
-sudo apt install tlp tlp-rdw -y
-sudo tlp start
+# ---------------------------------------------------------------------------
+# Batería (portátiles)
+# ---------------------------------------------------------------------------
+CHASSIS="$(cat /sys/class/dmi/id/chassis_type 2>/dev/null || echo 0)"
+if [[ "${CHASSIS}" =~ ^(8|9|10|11|14)$ ]]; then
+  log "Portátil detectado: instalando TLP"
+  sudo dnf -y install tlp tlp-rdw
+  sudo systemctl enable --now tlp
+else
+  log "No parece un portátil; se omite TLP"
+fi
 
+# ---------------------------------------------------------------------------
 # Google Chrome
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo dpkg -i google-chrome-stable_current_amd64.deb
-rm google-chrome-stable_current_amd64.deb
+# ---------------------------------------------------------------------------
+log "Instalando Google Chrome"
+wget -q -O "${TMP_DIR}/chrome.rpm" \
+  https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
+sudo dnf -y install "${TMP_DIR}/chrome.rpm"
 
-# Python 3 (pip and packages)
-sudo apt install python3-pip -y
-python3 -m pip install -r requirements.txt
+# ---------------------------------------------------------------------------
+# Python (venv de usuario)
+# ---------------------------------------------------------------------------
+log "Creando venv e instalando requirements.txt"
+VENV_DIR="${HOME}/.venvs/default"
+python3 -m venv "${VENV_DIR}"
+# shellcheck disable=SC1091
+source "${VENV_DIR}/bin/activate"
+pip install --upgrade pip
+if [[ -f "${SCRIPT_DIR}/requirements.txt" ]]; then
+  pip install -r "${SCRIPT_DIR}/requirements.txt"
+fi
+deactivate
+printf '\nAñade al PATH si quieres: source %s/bin/activate\n' "${VENV_DIR}"
 
-# Calibre
-sudo apt install calibre -y
-
-# Snapshots (snapcraft.io)
-sudo dnf install snapd
-sudo ln -s /var/lib/snapd/snap /snap
-
-sudo snap install vlc
-sudo snap install audacity
-sudo snap install kdenlive
-sudo snap install opera
-sudo snap install postman
-sudo snap install spotify
-sudo snap install sublime-text
-sudo snap install telegram-desktop
-sudo snap install discord
-
+# ---------------------------------------------------------------------------
 # Oh My Zsh
-sudo apt install zsh -y
-sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+# ---------------------------------------------------------------------------
+log "Instalando Oh My Zsh"
+if [[ ! -d "${HOME}/.oh-my-zsh" ]]; then
+  RUNZSH=no CHSH=no \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
+    "" --unattended
+  chsh -s "$(command -v zsh)" || warn "No se pudo cambiar el shell; ejecuta: chsh -s \$(which zsh)"
+else
+  log "Oh My Zsh ya está instalado"
+fi
+
+log "Listo. Cierra sesión (o reinicia) para que el grupo docker tenga efecto."
