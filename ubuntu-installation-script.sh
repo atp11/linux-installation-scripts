@@ -121,6 +121,19 @@ sudo apt install -y \
   steam-installer
 
 # ---------------------------------------------------------------------------
+# Codecs / firmware
+# ---------------------------------------------------------------------------
+log "Instalando codecs y extras multimedia"
+# Acepta la EULA de fuentes Microsoft sin prompt interactivo
+echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true \
+  | sudo debconf-set-selections
+sudo apt install -y \
+  ubuntu-restricted-extras \
+  ubuntu-restricted-addons \
+  libavcodec-extra \
+  linux-firmware
+
+# ---------------------------------------------------------------------------
 # Flatpak / Flathub
 # ---------------------------------------------------------------------------
 ensure_flathub

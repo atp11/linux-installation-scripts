@@ -30,6 +30,7 @@ Piden `sudo` una sola vez al inicio y lo mantienen activo durante la instalació
 - Chrome, Discord, Telegram, Spotify, VLC, Audacity, Kdenlive, Opera, Postman, Sublime Text
 - Steam, Visual Studio Code, LocalSend
 - Dropbox (paquete oficial o AUR)
+- Codecs multimedia / firmware (Ubuntu restricted extras, GStreamer/ffmpeg, etc.)
 - TLP solo si se detecta un portátil
 
 ## Notas por distro

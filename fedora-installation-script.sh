@@ -126,6 +126,24 @@ sudo dnf -y install \
   steam
 
 # ---------------------------------------------------------------------------
+# Codecs / firmware (RPM Fusion)
+# ---------------------------------------------------------------------------
+log "Instalando codecs multimedia"
+if rpm_installed ffmpeg && ! rpm_installed ffmpeg-free; then
+  skip "ffmpeg completo ya instalado"
+else
+  sudo dnf -y swap ffmpeg-free ffmpeg --allowerasing
+fi
+sudo dnf -y install @multimedia \
+  --setopt="install_weak_deps=False" \
+  --exclude=PackageKit-gstreamer-plugin
+sudo dnf -y install \
+  gstreamer1-plugin-openh264 \
+  mozilla-openh264 \
+  libavcodec-freeworld \
+  linux-firmware
+
+# ---------------------------------------------------------------------------
 # Flatpak / Flathub
 # ---------------------------------------------------------------------------
 ensure_flathub

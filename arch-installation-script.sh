@@ -119,6 +119,20 @@ sudo pacman -S --needed --noconfirm \
   flatpak
 
 # ---------------------------------------------------------------------------
+# Codecs / firmware
+# ---------------------------------------------------------------------------
+log "Instalando codecs multimedia"
+sudo pacman -S --needed --noconfirm \
+  ffmpeg \
+  gst-libav \
+  gst-plugins-base \
+  gst-plugins-good \
+  gst-plugins-bad \
+  gst-plugins-ugly \
+  libdvdcss \
+  linux-firmware
+
+# ---------------------------------------------------------------------------
 # yay (AUR helper)
 # ---------------------------------------------------------------------------
 if command -v yay >/dev/null 2>&1; then
