@@ -19,6 +19,8 @@ chmod +x *.sh
 
 Ejecuta los scripts con un usuario que tenga `sudo`, **no como root**.
 
+Los scripts de instalación son **idempotentes**: puedes reejecutarlos tras un fallo a mitad; lo ya instalado se omite (`skip: …`).
+
 ## Qué instalan (resumen)
 
 - Herramientas: git, curl, vim, gparted, wireshark, nmap, calibre, JRE, zsh + Oh My Zsh
