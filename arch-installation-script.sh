@@ -3,6 +3,11 @@
 # Idempotente: se puede reejecutar sin romper lo ya instalado.
 set -euo pipefail
 
+# Dotfiles: exporta DOTFILES_REPO o edita el valor por defecto.
+# Ejemplo: DOTFILES_REPO="https://github.com/usuario/dotfiles.git"
+DOTFILES_REPO="${DOTFILES_REPO:-}"
+DOTFILES_DIR="${DOTFILES_DIR:-${HOME}/.dotfiles}"
+
 log()  { printf '\n==> %s\n' "$*"; }
 skip() { printf '  skip: %s\n' "$*"; }
 warn() { printf 'WARN: %s\n' "$*" >&2; }
@@ -93,6 +98,39 @@ ensure_oh_my_zsh() {
     skip "shell ya es zsh"
   else
     chsh -s "${zsh_path}" || warn "No se pudo cambiar el shell; ejecuta: chsh -s \$(which zsh)"
+  fi
+}
+
+ensure_dotfiles() {
+  if [[ -z "${DOTFILES_REPO}" ]]; then
+    skip "DOTFILES_REPO vacío; se omiten dotfiles"
+    return 0
+  fi
+
+  if [[ -d "${DOTFILES_DIR}/.git" ]]; then
+    skip "dotfiles ya clonados en ${DOTFILES_DIR}"
+  else
+    log "Clonando dotfiles → ${DOTFILES_DIR}"
+    git clone "${DOTFILES_REPO}" "${DOTFILES_DIR}"
+  fi
+
+  local installer=""
+  for candidate in install.sh bootstrap.sh setup.sh; do
+    if [[ -x "${DOTFILES_DIR}/${candidate}" ]]; then
+      installer="${DOTFILES_DIR}/${candidate}"
+      break
+    elif [[ -f "${DOTFILES_DIR}/${candidate}" ]]; then
+      installer="${DOTFILES_DIR}/${candidate}"
+      break
+    fi
+  done
+
+  if [[ -n "${installer}" ]]; then
+    log "Ejecutando $(basename "${installer}")"
+    # shellcheck disable=SC1090
+    bash "${installer}"
+  else
+    warn "No hay install.sh/bootstrap.sh/setup.sh en ${DOTFILES_DIR}; aplica los enlaces a mano"
   fi
 }
 
@@ -205,5 +243,10 @@ fi
 # Oh My Zsh
 # ---------------------------------------------------------------------------
 ensure_oh_my_zsh
+
+# ---------------------------------------------------------------------------
+# Dotfiles
+# ---------------------------------------------------------------------------
+ensure_dotfiles
 
 log "Listo."

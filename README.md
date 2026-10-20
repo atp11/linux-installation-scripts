@@ -17,6 +17,14 @@ chmod +x *.sh
 ./ubuntu-installation-script.sh   # o arch- / fedora-
 ```
 
+Opcional — clonar dotfiles al final:
+
+```bash
+DOTFILES_REPO="https://github.com/usuario/dotfiles.git" ./ubuntu-installation-script.sh
+```
+
+Si el repo incluye `install.sh`, `bootstrap.sh` o `setup.sh`, se ejecuta automáticamente. Sin `DOTFILES_REPO`, se omite.
+
 Ejecuta los scripts con un usuario que tenga `sudo`, **no como root**.
 
 Los scripts de instalación son **idempotentes**: puedes reejecutarlos tras un fallo a mitad; lo ya instalado se omite (`skip: …`).
