@@ -110,13 +110,9 @@ log "Instalando paquetes básicos"
 sudo dnf -y install \
   curl wget \
   git \
-  java-latest-openjdk \
   unrar p7zip p7zip-plugins \
   vim \
   gparted \
-  wireshark \
-  nmap \
-  calibre \
   zsh \
   python3-pip \
   python3-virtualenv \

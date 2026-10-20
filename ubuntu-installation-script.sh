@@ -97,8 +97,6 @@ sudo apt clean
 log "Instalando paquetes básicos"
 sudo apt install -y \
   build-essential \
-  default-jre \
-  synaptic \
   p7zip-full p7zip-rar unrar \
   git \
   gnome-tweaks \
@@ -109,9 +107,6 @@ sudo apt install -y \
   software-properties-common \
   vim \
   gparted \
-  wireshark \
-  nmap \
-  calibre \
   zsh \
   python3-pip \
   python3-venv \

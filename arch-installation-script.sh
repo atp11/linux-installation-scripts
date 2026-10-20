@@ -107,12 +107,9 @@ sudo pacman -S --needed --noconfirm \
   base-devel \
   git curl wget \
   vim \
-  jre-openjdk \
   p7zip unrar \
   gnome-tweaks \
   gparted \
-  wireshark-qt nmap \
-  calibre \
   zsh \
   python python-pip python-virtualenv \
   steam \
