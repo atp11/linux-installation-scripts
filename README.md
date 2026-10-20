@@ -1,6 +1,6 @@
 # linux-installation-scripts
 
-Scripts de post-instalación para dejar un Linux nuevo a tu gusto (paquetes base, apps de escritorio y Oh My Zsh).
+Scripts de post-instalación para dejar un Linux nuevo a tu gusto (paquetes base, apps de escritorio vía Flatpak y Oh My Zsh).
 
 ## Distros
 
@@ -30,6 +30,10 @@ Ejecuta los scripts con un usuario que tenga `sudo`, **no como root**.
 
 ## Notas por distro
 
-- **Ubuntu**: apps de escritorio vía Snap; Steam con `steam-installer`.
-- **Arch**: `pacman` + `yay`; habilita `[multilib]` para Steam.
-- **Fedora**: Flatpak/Flathub; RPM Fusion (necesario para Steam).
+- **Apps de escritorio**: Flatpak/Flathub en las tres (Discord, Chrome, Spotify, Telegram, VLC, Audacity, Kdenlive, Opera, Postman, Sublime Text, VS Code, LocalSend).
+- **Nativo**: herramientas de sistema, Steam, Dropbox, TLP, Oh My Zsh.
+- **Ubuntu**: Steam con `steam-installer`.
+- **Arch**: `pacman` + `yay` (Dropbox); habilita `[multilib]` para Steam.
+- **Fedora**: RPM Fusion (necesario para Steam).
+
+Los scripts de update refrescan Flatpak (`flatpak update`).

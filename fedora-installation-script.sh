@@ -50,7 +50,7 @@ sudo dnf -y install \
   steam
 
 # ---------------------------------------------------------------------------
-# Flatpak / Flathub (preferido en Fedora frente a snap)
+# Flatpak / Flathub (canal unificado de apps de escritorio)
 # ---------------------------------------------------------------------------
 log "Configurando Flathub"
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -58,6 +58,7 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 log "Instalando aplicaciones (Flatpak)"
 flatpak install -y flathub \
   com.discordapp.Discord \
+  com.google.Chrome \
   com.spotify.Client \
   org.telegram.desktop \
   org.videolan.VLC \
@@ -99,14 +100,6 @@ if [[ "${CHASSIS}" =~ ^(8|9|10|11|14)$ ]]; then
 else
   log "No parece un portátil; se omite TLP"
 fi
-
-# ---------------------------------------------------------------------------
-# Google Chrome
-# ---------------------------------------------------------------------------
-log "Instalando Google Chrome"
-wget -q -O "${TMP_DIR}/chrome.rpm" \
-  https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
-sudo dnf -y install "${TMP_DIR}/chrome.rpm"
 
 # ---------------------------------------------------------------------------
 # Oh My Zsh

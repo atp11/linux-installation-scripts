@@ -49,19 +49,32 @@ sudo apt install -y \
   steam-installer
 
 # ---------------------------------------------------------------------------
-# Comunicación
+# Flatpak / Flathub (canal unificado de apps de escritorio)
 # ---------------------------------------------------------------------------
-log "Instalando Discord"
-TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "${TMP_DIR}"' EXIT
-wget -q -O "${TMP_DIR}/discord.deb" \
-  "https://discord.com/api/download?platform=linux&format=deb"
-sudo apt install -y "${TMP_DIR}/discord.deb"
+log "Configurando Flathub"
+sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+log "Instalando aplicaciones (Flatpak)"
+flatpak install -y flathub \
+  com.discordapp.Discord \
+  com.google.Chrome \
+  com.spotify.Client \
+  org.telegram.desktop \
+  org.videolan.VLC \
+  org.audacityteam.Audacity \
+  org.kde.kdenlive \
+  com.opera.Opera \
+  com.getpostman.Postman \
+  com.sublimehq.SublimeText \
+  com.visualstudio.code \
+  org.localsend.localsend_app
 
 # ---------------------------------------------------------------------------
 # Dropbox
 # ---------------------------------------------------------------------------
 log "Instalando Dropbox"
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "${TMP_DIR}"' EXIT
 DROPBOX_DEB="$(
   curl -fsSL https://linux.dropbox.com/packages/ubuntu/ \
     | grep -oE 'dropbox_[0-9]{4}\.[0-9]{2}\.[0-9]{2}_amd64\.deb' \
@@ -86,29 +99,6 @@ if [[ "${CHASSIS}" =~ ^(8|9|10|11|14)$ ]]; then
 else
   log "No parece un portátil; se omite TLP"
 fi
-
-# ---------------------------------------------------------------------------
-# Google Chrome
-# ---------------------------------------------------------------------------
-log "Instalando Google Chrome"
-wget -q -O "${TMP_DIR}/chrome.deb" \
-  https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo apt install -y "${TMP_DIR}/chrome.deb"
-
-# ---------------------------------------------------------------------------
-# Snaps / apps de escritorio
-# ---------------------------------------------------------------------------
-log "Instalando aplicaciones (snap)"
-sudo snap install vlc
-sudo snap install audacity
-sudo snap install kdenlive
-sudo snap install opera
-sudo snap install postman
-sudo snap install spotify
-sudo snap install sublime-text
-sudo snap install telegram-desktop
-sudo snap install code --classic
-sudo snap install localsend
 
 # ---------------------------------------------------------------------------
 # Oh My Zsh

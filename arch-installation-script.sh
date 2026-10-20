@@ -41,16 +41,11 @@ sudo pacman -S --needed --noconfirm \
   calibre \
   zsh \
   python python-pip python-virtualenv \
-  discord \
-  telegram-desktop \
-  vlc \
-  audacity \
-  kdenlive \
   steam \
   flatpak
 
 # ---------------------------------------------------------------------------
-# yay (AUR helper)
+# yay (AUR helper) — Dropbox aún no está en Flathub de forma fiable
 # ---------------------------------------------------------------------------
 if ! command -v yay >/dev/null 2>&1; then
   log "Instalando yay"
@@ -62,19 +57,29 @@ else
   log "yay ya está instalado"
 fi
 
+log "Instalando Dropbox (AUR)"
+yay -S --needed --noconfirm dropbox
+
 # ---------------------------------------------------------------------------
-# AUR
+# Flatpak / Flathub (canal unificado de apps de escritorio)
 # ---------------------------------------------------------------------------
-log "Instalando paquetes AUR"
-yay -S --needed --noconfirm \
-  google-chrome \
-  dropbox \
-  postman-bin \
-  spotify \
-  sublime-text-4 \
-  opera \
-  visual-studio-code-bin \
-  localsend-bin
+log "Configurando Flathub"
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+log "Instalando aplicaciones (Flatpak)"
+flatpak install -y flathub \
+  com.discordapp.Discord \
+  com.google.Chrome \
+  com.spotify.Client \
+  org.telegram.desktop \
+  org.videolan.VLC \
+  org.audacityteam.Audacity \
+  org.kde.kdenlive \
+  com.opera.Opera \
+  com.getpostman.Postman \
+  com.sublimehq.SublimeText \
+  com.visualstudio.code \
+  org.localsend.localsend_app
 
 # ---------------------------------------------------------------------------
 # Batería (portátiles)
@@ -87,12 +92,6 @@ if [[ "${CHASSIS}" =~ ^(8|9|10|11|14)$ ]]; then
 else
   log "No parece un portátil; se omite TLP"
 fi
-
-# ---------------------------------------------------------------------------
-# Flatpak (Flathub)
-# ---------------------------------------------------------------------------
-log "Configurando Flathub"
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 # ---------------------------------------------------------------------------
 # Oh My Zsh
