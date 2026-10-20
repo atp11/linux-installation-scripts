@@ -21,6 +21,8 @@ Ejecuta los scripts con un usuario que tenga `sudo`, **no como root**.
 
 Los scripts de instalación son **idempotentes**: puedes reejecutarlos tras un fallo a mitad; lo ya instalado se omite (`skip: …`).
 
+Piden `sudo` una sola vez al inicio y lo mantienen activo durante la instalación.
+
 ## Qué instalan (resumen)
 
 - Herramientas: git, curl, vim, gparted, wireshark, nmap, calibre, JRE, zsh + Oh My Zsh

@@ -72,6 +72,16 @@ if [[ "${EUID}" -eq 0 ]]; then
   exit 1
 fi
 
+# Mantener sudo activo durante toda la instalación
+sudo -v
+while true; do
+  sudo -n true
+  sleep 60
+  kill -0 "$$" || exit
+done 2>/dev/null &
+SUDO_KEEPALIVE_PID=$!
+trap 'kill "${SUDO_KEEPALIVE_PID}" 2>/dev/null || true' EXIT
+
 # ---------------------------------------------------------------------------
 # Sistema
 # ---------------------------------------------------------------------------
