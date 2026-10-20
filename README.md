@@ -25,7 +25,7 @@ Piden `sudo` una sola vez al inicio y lo mantienen activo durante la instalació
 
 ## Qué instalan (resumen)
 
-- Herramientas: git, curl, vim, gparted, zsh + Oh My Zsh
+- Herramientas: git, curl, vim, gparted, zsh + Oh My Zsh (plugins: autosuggestions, syntax-highlighting)
 - Python: `pip` + `venv` (sin librerías globales; crea un venv por proyecto cuando lo necesites)
 - Chrome, Discord, Telegram, Spotify, VLC, Audacity, Kdenlive, Opera, Postman, Sublime Text
 - Steam, Visual Studio Code, LocalSend

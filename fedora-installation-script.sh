@@ -47,6 +47,17 @@ ensure_flatpak_apps() {
   done
 }
 
+ensure_oh_my_zsh_plugin() {
+  local name="$1" repo="$2"
+  local dest="${ZSH_CUSTOM:-${HOME}/.oh-my-zsh/custom}/plugins/${name}"
+  if [[ -d "${dest}" ]]; then
+    skip "plugin ${name} ya instalado"
+  else
+    log "Instalando plugin ${name}"
+    git clone --depth=1 "${repo}" "${dest}"
+  fi
+}
+
 ensure_oh_my_zsh() {
   if [[ ! -d "${HOME}/.oh-my-zsh" ]]; then
     log "Instalando Oh My Zsh"
@@ -55,6 +66,24 @@ ensure_oh_my_zsh() {
       "" --unattended
   else
     skip "Oh My Zsh ya instalado"
+  fi
+
+  ensure_oh_my_zsh_plugin zsh-autosuggestions \
+    https://github.com/zsh-users/zsh-autosuggestions.git
+  ensure_oh_my_zsh_plugin zsh-syntax-highlighting \
+    https://github.com/zsh-users/zsh-syntax-highlighting.git
+
+  local zshrc="${HOME}/.zshrc"
+  if [[ -f "${zshrc}" ]]; then
+    if grep -qE '^\s*plugins=\(.*zsh-autosuggestions.*zsh-syntax-highlighting' "${zshrc}"; then
+      skip "plugins ya habilitados en .zshrc"
+    else
+      log "Habilitando plugins en .zshrc"
+      # syntax-highlighting debe ir al final de la lista
+      sed -i 's/^plugins=(.*)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' "${zshrc}"
+    fi
+  else
+    warn "No existe ~/.zshrc; habilita los plugins manualmente"
   fi
 
   local zsh_path current_shell
