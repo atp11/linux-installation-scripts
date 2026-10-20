@@ -19,6 +19,15 @@ log "Actualizando el sistema"
 sudo pacman -Syu --noconfirm
 
 # ---------------------------------------------------------------------------
+# Multilib (necesario para Steam)
+# ---------------------------------------------------------------------------
+if ! grep -qE '^\[multilib\]' /etc/pacman.conf; then
+  log "Habilitando repositorio [multilib]"
+  sudo sed -i '/^#\[multilib\]/,/^#Include = \/etc\/pacman.d\/mirrorlist/{s/^#//}' /etc/pacman.conf
+  sudo pacman -Sy --noconfirm
+fi
+
+# ---------------------------------------------------------------------------
 # Básicos (+ base-devel para AUR)
 # ---------------------------------------------------------------------------
 log "Instalando paquetes oficiales"
@@ -34,12 +43,12 @@ sudo pacman -S --needed --noconfirm \
   calibre \
   zsh \
   python python-pip python-virtualenv \
-  docker docker-compose \
   discord \
   telegram-desktop \
   vlc \
   audacity \
   kdenlive \
+  steam \
   flatpak
 
 # ---------------------------------------------------------------------------
@@ -66,14 +75,8 @@ yay -S --needed --noconfirm \
   spotify \
   sublime-text-4 \
   opera \
-  teams-for-linux
-
-# ---------------------------------------------------------------------------
-# Docker
-# ---------------------------------------------------------------------------
-log "Habilitando Docker"
-sudo systemctl enable --now docker
-sudo usermod -aG docker "${USER}"
+  visual-studio-code-bin \
+  localsend-bin
 
 # ---------------------------------------------------------------------------
 # Batería (portátiles)
@@ -121,4 +124,4 @@ else
   log "Oh My Zsh ya está instalado"
 fi
 
-log "Listo. Cierra sesión (o reinicia) para que el grupo docker tenga efecto."
+log "Listo."

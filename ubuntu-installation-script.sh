@@ -47,7 +47,8 @@ sudo apt install -y \
   python3-venv \
   python3-gpg \
   libappindicator3-1 \
-  flatpak
+  flatpak \
+  steam-installer
 
 # ---------------------------------------------------------------------------
 # Comunicación
@@ -58,41 +59,6 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 wget -q -O "${TMP_DIR}/discord.deb" \
   "https://discord.com/api/download?platform=linux&format=deb"
 sudo apt install -y "${TMP_DIR}/discord.deb"
-
-# Teams clásico fue discontinuado; wrapper no oficial alrededor de Teams Web.
-log "Instalando Teams for Linux (wrapper no oficial; alternativa: PWA en Chrome)"
-sudo snap install teams-for-linux
-
-# ---------------------------------------------------------------------------
-# Docker (repositorio oficial)
-# ---------------------------------------------------------------------------
-log "Instalando Docker Engine"
-for pkg in docker.io docker-compose docker-compose-v2 docker-doc docker-buildx \
-           podman-docker containerd runc; do
-  sudo apt remove -y "${pkg}" 2>/dev/null || true
-done
-
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-  -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-sudo tee /etc/apt/sources.list.d/docker.sources >/dev/null <<EOF
-Types: deb
-URIs: https://download.docker.com/linux/ubuntu
-Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
-Components: stable
-Architectures: $(dpkg --print-architecture)
-Signed-By: /etc/apt/keyrings/docker.asc
-EOF
-
-sudo apt update
-sudo apt install -y \
-  docker-ce docker-ce-cli containerd.io \
-  docker-buildx-plugin docker-compose-plugin
-
-sudo systemctl enable --now docker
-sudo usermod -aG docker "${USER}"
 
 # ---------------------------------------------------------------------------
 # Dropbox
@@ -158,6 +124,8 @@ sudo snap install postman
 sudo snap install spotify
 sudo snap install sublime-text
 sudo snap install telegram-desktop
+sudo snap install code --classic
+sudo snap install localsend
 
 # ---------------------------------------------------------------------------
 # Oh My Zsh
@@ -172,4 +140,4 @@ else
   log "Oh My Zsh ya está instalado"
 fi
 
-log "Listo. Cierra sesión (o reinicia) para que el grupo docker tenga efecto."
+log "Listo."

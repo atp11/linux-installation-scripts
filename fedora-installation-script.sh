@@ -21,7 +21,7 @@ sudo dnf -y autoremove
 sudo dnf -y clean all
 
 # ---------------------------------------------------------------------------
-# RPM Fusion (codecs / extras)
+# RPM Fusion (codecs / extras / Steam)
 # ---------------------------------------------------------------------------
 log "Habilitando RPM Fusion"
 FEDORA_VERSION="$(rpm -E %fedora)"
@@ -48,7 +48,8 @@ sudo dnf -y install \
   python3-virtualenv \
   gnome-tweaks \
   flatpak \
-  libappindicator-gtk3
+  libappindicator-gtk3 \
+  steam
 
 # ---------------------------------------------------------------------------
 # Flatpak / Flathub (preferido en Fedora frente a snap)
@@ -67,33 +68,8 @@ flatpak install -y flathub \
   com.opera.Opera \
   com.getpostman.Postman \
   com.sublimehq.SublimeText \
-  com.github.IsmaelMartinez.Teams_for_Linux
-
-# ---------------------------------------------------------------------------
-# Docker (repositorio oficial)
-# ---------------------------------------------------------------------------
-log "Instalando Docker Engine"
-sudo dnf -y remove docker docker-client docker-client-latest docker-common \
-  docker-latest docker-latest-logrotate docker-logrotate docker-selinux \
-  docker-engine-selinux docker-engine 2>/dev/null || true
-
-sudo dnf -y install dnf-plugins-core
-DOCKER_REPO_URL="https://download.docker.com/linux/fedora/docker-ce.repo"
-# dnf5 addrepo falla con líneas vacías en el .repo; se compactan antes de añadirlo.
-TMP_REPO="$(mktemp)"
-curl -fsSL "${DOCKER_REPO_URL}" | tr -s '\n' > "${TMP_REPO}"
-if ! sudo dnf config-manager addrepo --overwrite --save-filename=docker-ce.repo \
-      --from-repofile="${TMP_REPO}" 2>/dev/null; then
-  sudo dnf config-manager --add-repo "${DOCKER_REPO_URL}"
-fi
-rm -f "${TMP_REPO}"
-
-sudo dnf -y install \
-  docker-ce docker-ce-cli containerd.io \
-  docker-buildx-plugin docker-compose-plugin
-
-sudo systemctl enable --now docker
-sudo usermod -aG docker "${USER}"
+  com.visualstudio.code \
+  org.localsend.localsend_app
 
 # ---------------------------------------------------------------------------
 # Dropbox
@@ -162,4 +138,4 @@ else
   log "Oh My Zsh ya está instalado"
 fi
 
-log "Listo. Cierra sesión (o reinicia) para que el grupo docker tenga efecto."
+log "Listo."
