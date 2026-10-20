@@ -2,8 +2,6 @@
 # Post-install setup for Fedora Workstation.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 log()  { printf '\n==> %s\n' "$*"; }
 warn() { printf 'WARN: %s\n' "$*" >&2; }
 
@@ -109,21 +107,6 @@ log "Instalando Google Chrome"
 wget -q -O "${TMP_DIR}/chrome.rpm" \
   https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
 sudo dnf -y install "${TMP_DIR}/chrome.rpm"
-
-# ---------------------------------------------------------------------------
-# Python (venv de usuario)
-# ---------------------------------------------------------------------------
-log "Creando venv e instalando requirements.txt"
-VENV_DIR="${HOME}/.venvs/default"
-python3 -m venv "${VENV_DIR}"
-# shellcheck disable=SC1091
-source "${VENV_DIR}/bin/activate"
-pip install --upgrade pip
-if [[ -f "${SCRIPT_DIR}/requirements.txt" ]]; then
-  pip install -r "${SCRIPT_DIR}/requirements.txt"
-fi
-deactivate
-printf '\nAñade al PATH si quieres: source %s/bin/activate\n' "${VENV_DIR}"
 
 # ---------------------------------------------------------------------------
 # Oh My Zsh

@@ -18,14 +18,4 @@ if command -v flatpak >/dev/null 2>&1; then
   flatpak update -y
 fi
 
-if [[ -x "${HOME}/.venvs/default/bin/pip" ]]; then
-  log "Actualizando paquetes del venv"
-  # shellcheck disable=SC1091
-  source "${HOME}/.venvs/default/bin/activate"
-  pip install --upgrade pip
-  pip list --outdated --format=columns 2>/dev/null | awk 'NR>2 {print $1}' \
-    | xargs -r pip install -U || true
-  deactivate
-fi
-
 log "Hecho."

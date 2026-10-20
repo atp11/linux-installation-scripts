@@ -2,8 +2,6 @@
 # Post-install setup for Ubuntu (22.04 / 24.04 / 26.04 LTS and derivatives).
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 log()  { printf '\n==> %s\n' "$*"; }
 warn() { printf 'WARN: %s\n' "$*" >&2; }
 
@@ -96,21 +94,6 @@ log "Instalando Google Chrome"
 wget -q -O "${TMP_DIR}/chrome.deb" \
   https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 sudo apt install -y "${TMP_DIR}/chrome.deb"
-
-# ---------------------------------------------------------------------------
-# Python (venv de usuario; evita conflictos con PEP 668)
-# ---------------------------------------------------------------------------
-log "Creando venv e instalando requirements.txt"
-VENV_DIR="${HOME}/.venvs/default"
-python3 -m venv "${VENV_DIR}"
-# shellcheck disable=SC1091
-source "${VENV_DIR}/bin/activate"
-pip install --upgrade pip
-if [[ -f "${SCRIPT_DIR}/requirements.txt" ]]; then
-  pip install -r "${SCRIPT_DIR}/requirements.txt"
-fi
-deactivate
-printf '\nAñade al PATH si quieres: source %s/bin/activate\n' "${VENV_DIR}"
 
 # ---------------------------------------------------------------------------
 # Snaps / apps de escritorio
