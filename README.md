@@ -17,13 +17,15 @@ chmod +x *.sh
 ./ubuntu-installation-script.sh   # o arch- / fedora-
 ```
 
-Opcional — clonar dotfiles al final:
+Opciones por variable de entorno:
 
 ```bash
+# Dotfiles (si hay install.sh / bootstrap.sh / setup.sh, se ejecuta)
 DOTFILES_REPO="https://github.com/usuario/dotfiles.git" ./ubuntu-installation-script.sh
-```
 
-Si el repo incluye `install.sh`, `bootstrap.sh` o `setup.sh`, se ejecuta automáticamente. Sin `DOTFILES_REPO`, se omite.
+# Dropbox (omitido por defecto)
+INSTALL_DROPBOX=1 ./ubuntu-installation-script.sh
+```
 
 Ejecuta los scripts con un usuario que tenga `sudo`, **no como root**.
 
@@ -37,16 +39,16 @@ Piden `sudo` una sola vez al inicio y lo mantienen activo durante la instalació
 - Python: `pip` + `venv` (sin librerías globales; crea un venv por proyecto cuando lo necesites)
 - Chrome, Discord, Telegram, Spotify, VLC, Audacity, Kdenlive, Opera, Postman, Sublime Text
 - Steam, Visual Studio Code, LocalSend
-- Dropbox (paquete oficial o AUR)
+- Dropbox opcional (`INSTALL_DROPBOX=1`)
 - Codecs multimedia / firmware (Ubuntu restricted extras, GStreamer/ffmpeg, etc.)
 - TLP solo si se detecta un portátil
 
 ## Notas por distro
 
 - **Apps de escritorio**: Flatpak/Flathub en las tres (Discord, Chrome, Spotify, Telegram, VLC, Audacity, Kdenlive, Opera, Postman, Sublime Text, VS Code, LocalSend).
-- **Nativo**: herramientas de sistema, Steam, Dropbox, TLP, Oh My Zsh.
+- **Nativo**: herramientas de sistema, Steam, TLP, Oh My Zsh; Dropbox solo si se pide.
 - **Ubuntu**: Steam con `steam-installer`.
-- **Arch**: `pacman` + `yay` (Dropbox); habilita `[multilib]` para Steam.
+- **Arch**: `pacman`; `yay` solo si instalas Dropbox; habilita `[multilib]` para Steam.
 - **Fedora**: RPM Fusion (necesario para Steam).
 
 Los scripts de update refrescan Flatpak (`flatpak update`).

@@ -8,6 +8,9 @@ set -euo pipefail
 DOTFILES_REPO="${DOTFILES_REPO:-}"
 DOTFILES_DIR="${DOTFILES_DIR:-${HOME}/.dotfiles}"
 
+# Dropbox: INSTALL_DROPBOX=1 para instalar (omitido por defecto).
+INSTALL_DROPBOX="${INSTALL_DROPBOX:-0}"
+
 log()  { printf '\n==> %s\n' "$*"; }
 skip() { printf '  skip: %s\n' "$*"; }
 warn() { printf 'WARN: %s\n' "$*" >&2; }
@@ -214,9 +217,11 @@ log "Comprobando aplicaciones Flatpak"
 ensure_flatpak_apps
 
 # ---------------------------------------------------------------------------
-# Dropbox
+# Dropbox (opcional)
 # ---------------------------------------------------------------------------
-if rpm_installed nautilus-dropbox || command -v dropbox >/dev/null 2>&1; then
+if [[ "${INSTALL_DROPBOX}" != "1" ]]; then
+  skip "Dropbox omitido (INSTALL_DROPBOX=1 para instalar)"
+elif rpm_installed nautilus-dropbox || command -v dropbox >/dev/null 2>&1; then
   skip "Dropbox ya instalado"
 else
   log "Instalando Dropbox (nautilus-dropbox)"

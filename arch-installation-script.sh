@@ -8,6 +8,9 @@ set -euo pipefail
 DOTFILES_REPO="${DOTFILES_REPO:-}"
 DOTFILES_DIR="${DOTFILES_DIR:-${HOME}/.dotfiles}"
 
+# Dropbox: INSTALL_DROPBOX=1 para instalar (omitido por defecto).
+INSTALL_DROPBOX="${INSTALL_DROPBOX:-0}"
+
 log()  { printf '\n==> %s\n' "$*"; }
 skip() { printf '  skip: %s\n' "$*"; }
 warn() { printf 'WARN: %s\n' "$*" >&2; }
@@ -197,23 +200,27 @@ sudo pacman -S --needed --noconfirm \
   linux-firmware
 
 # ---------------------------------------------------------------------------
-# yay (AUR helper)
+# Dropbox (opcional, vía AUR / yay)
 # ---------------------------------------------------------------------------
-if command -v yay >/dev/null 2>&1; then
-  skip "yay ya instalado"
+if [[ "${INSTALL_DROPBOX}" != "1" ]]; then
+  skip "Dropbox omitido (INSTALL_DROPBOX=1 para instalar)"
 else
-  log "Instalando yay"
-  TMP_DIR="$(mktemp -d)"
-  git clone https://aur.archlinux.org/yay.git "${TMP_DIR}/yay"
-  (cd "${TMP_DIR}/yay" && makepkg -si --noconfirm)
-  rm -rf "${TMP_DIR}"
-fi
+  if command -v yay >/dev/null 2>&1; then
+    skip "yay ya instalado"
+  else
+    log "Instalando yay"
+    TMP_DIR="$(mktemp -d)"
+    git clone https://aur.archlinux.org/yay.git "${TMP_DIR}/yay"
+    (cd "${TMP_DIR}/yay" && makepkg -si --noconfirm)
+    rm -rf "${TMP_DIR}"
+  fi
 
-if pacman_installed dropbox; then
-  skip "Dropbox ya instalado"
-else
-  log "Instalando Dropbox (AUR)"
-  yay -S --needed --noconfirm dropbox
+  if pacman_installed dropbox; then
+    skip "Dropbox ya instalado"
+  else
+    log "Instalando Dropbox (AUR)"
+    yay -S --needed --noconfirm dropbox
+  fi
 fi
 
 # ---------------------------------------------------------------------------
